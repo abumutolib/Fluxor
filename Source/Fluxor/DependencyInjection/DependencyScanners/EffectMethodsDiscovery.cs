@@ -9,7 +9,7 @@ namespace Fluxor.DependencyInjection.DependencyScanners
 	internal static class EffectMethodsDiscovery
 	{
 		internal static DiscoveredEffectMethod[] DiscoverEffectMethods(
-			IServiceCollection serviceCollection,
+			Options options,
 			IEnumerable<TypeAndMethodInfo> allCandidateMethods)
 		{
 			DiscoveredEffectMethod[] discoveredEffects =
@@ -36,7 +36,7 @@ namespace Fluxor.DependencyInjection.DependencyScanners
 					.Distinct();
 
 			foreach (Type hostClassType in hostClassTypes)
-				serviceCollection.AddScoped(hostClassType);
+				options.RegisterService(hostClassType);
 
 			return discoveredEffects;
 		}

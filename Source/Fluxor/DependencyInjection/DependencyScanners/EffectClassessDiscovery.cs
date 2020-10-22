@@ -8,7 +8,8 @@ namespace Fluxor.DependencyInjection.DependencyScanners
 	internal static class EffectClassessDiscovery
 	{
 		internal static DiscoveredEffectClass[] DiscoverEffectClasses(
-			IServiceCollection serviceCollection, IEnumerable<Type> allCandidateTypes)
+			Options options,
+			IEnumerable<Type> allCandidateTypes)
 		{
 			DiscoveredEffectClass[] discoveredEffectInfos =
 				allCandidateTypes
@@ -18,7 +19,7 @@ namespace Fluxor.DependencyInjection.DependencyScanners
 					.ToArray();
 
 			foreach (DiscoveredEffectClass discoveredEffectInfo in discoveredEffectInfos)
-				serviceCollection.AddScoped(discoveredEffectInfo.ImplementingType);
+				options.RegisterService(discoveredEffectInfo.ImplementingType);
 
 			return discoveredEffectInfos;
 		}

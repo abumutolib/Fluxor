@@ -8,7 +8,8 @@ namespace Fluxor.DependencyInjection.DependencyScanners
 	internal static class ReducerClassessDiscovery
 	{
 		internal static DiscoveredReducerClass[] DiscoverReducerClasses(
-			IServiceCollection serviceCollection, IEnumerable<Type> allCandidateTypes)
+			Options options,
+			IEnumerable<Type> allCandidateTypes)
 		{
 			DiscoveredReducerClass[] discoveredReducerInfos =
 				allCandidateTypes
@@ -26,7 +27,7 @@ namespace Fluxor.DependencyInjection.DependencyScanners
 					.ToArray();
 
 			foreach (DiscoveredReducerClass discoveredReducerInfo in discoveredReducerInfos)
-				serviceCollection.AddScoped(serviceType: discoveredReducerInfo.ImplementingType);
+				options.RegisterService(discoveredReducerInfo.ImplementingType);
 
 			return discoveredReducerInfos;
 		}

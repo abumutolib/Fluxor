@@ -3,14 +3,13 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
-using System.Security.Cryptography.X509Certificates;
 
 namespace Fluxor.DependencyInjection.DependencyScanners
 {
 	internal static class FeatureClassesDiscovery
 	{
 		internal static DiscoveredFeatureClass[] DiscoverFeatureClasses(
-			IServiceCollection serviceCollection,
+			Options options,
 			IEnumerable<Type> allCandidateTypes,
 			IEnumerable<DiscoveredReducerClass> discoveredReducerClasses,
 			IEnumerable<DiscoveredReducerMethod> discoveredReducerMethods)
@@ -52,7 +51,7 @@ namespace Fluxor.DependencyInjection.DependencyScanners
 					out IGrouping<Type, DiscoveredReducerMethod> discoveredReducerMethodsForStateType);
 
 				RegisterFeature(
-					serviceCollection,
+					options,
 					discoveredFeatureClass,
 					discoveredReducerClassesForStateType,
 					discoveredReducerMethodsForStateType);
@@ -62,7 +61,7 @@ namespace Fluxor.DependencyInjection.DependencyScanners
 		}
 
 		private static void RegisterFeature(
-			IServiceCollection serviceCollection,
+			Options options,
 			DiscoveredFeatureClass discoveredFeatureClass,
 			IEnumerable<DiscoveredReducerClass> discoveredReducerClassesForStateType,
 			IEnumerable<DiscoveredReducerMethod> discoveredReducerMethodsForStateType)
@@ -72,10 +71,10 @@ namespace Fluxor.DependencyInjection.DependencyScanners
 				discoveredFeatureClass.ImplementingType.GetMethod(addReducerMethodName);
 
 			// Register the implementing type so we can get an instance from the service provider
-			serviceCollection.AddScoped(discoveredFeatureClass.ImplementingType);
+			options.RegisterService(discoveredFeatureClass.ImplementingType);
 
 			// Register a factory for creating instance of this feature type when requested via the generic IFeature interface
-			serviceCollection.AddScoped(discoveredFeatureClass.FeatureInterfaceGenericType, serviceProvider =>
+			options.RegisterService(discoveredFeatureClass.FeatureInterfaceGenericType, serviceProvider =>
 			{
 				// Create an instance of the implementing type
 				var featureInstance = (IFeature)serviceProvider.GetService(discoveredFeatureClass.ImplementingType);

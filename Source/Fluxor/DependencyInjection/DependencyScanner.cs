@@ -10,7 +10,6 @@ namespace Fluxor.DependencyInjection
 	internal static class DependencyScanner
 	{
 		internal static void Scan(
-			this IServiceCollection serviceCollection,
 			Options options,
 			IEnumerable<AssemblyScanSettings> assembliesToScan,
 			IEnumerable<AssemblyScanSettings> scanIncludeList)
@@ -26,29 +25,28 @@ namespace Fluxor.DependencyInjection
 
 			// Classes must not be abstract
 			DiscoveredReducerClass[] discoveredReducerClasses =
-				ReducerClassessDiscovery.DiscoverReducerClasses(serviceCollection, allNonAbstractCandidateTypes);
+				ReducerClassessDiscovery.DiscoverReducerClasses(options, allNonAbstractCandidateTypes);
 
 			DiscoveredEffectClass[] discoveredEffectClasses =
-				EffectClassessDiscovery.DiscoverEffectClasses(serviceCollection, allNonAbstractCandidateTypes);
+				EffectClassessDiscovery.DiscoverEffectClasses(options, allNonAbstractCandidateTypes);
 
 			// Method reducer/effects may belong to abstract classes
 			TypeAndMethodInfo[] allCandidateMethods = AssemblyScanSettings.FilterMethods(allCandidateTypes);
 
 			DiscoveredReducerMethod[] discoveredReducerMethods =
-				ReducerMethodsDiscovery.DiscoverReducerMethods(serviceCollection, allCandidateMethods);
+				ReducerMethodsDiscovery.DiscoverReducerMethods(options, allCandidateMethods);
 
 			DiscoveredEffectMethod[] discoveredEffectMethods =
-				EffectMethodsDiscovery.DiscoverEffectMethods(serviceCollection, allCandidateMethods);
+				EffectMethodsDiscovery.DiscoverEffectMethods(options, allCandidateMethods);
 
 			DiscoveredFeatureClass[] discoveredFeatureClasses =
 				FeatureClassesDiscovery.DiscoverFeatureClasses(
-					serviceCollection: serviceCollection,
+					options: options,
 					allCandidateTypes: allNonAbstractCandidateTypes,
 					discoveredReducerClasses: discoveredReducerClasses,
 					discoveredReducerMethods: discoveredReducerMethods);
 
 			RegisterStore(
-				serviceCollection: serviceCollection,
 				options: options,
 				discoveredFeatureClasses: discoveredFeatureClasses,
 				discoveredEffectClasses: discoveredEffectClasses,
@@ -87,21 +85,20 @@ namespace Fluxor.DependencyInjection
 		}
 
 		private static void RegisterStore(
-			IServiceCollection serviceCollection,
 			Options options,
 			IEnumerable<DiscoveredFeatureClass> discoveredFeatureClasses,
 			IEnumerable<DiscoveredEffectClass> discoveredEffectClasses,
 			IEnumerable<DiscoveredEffectMethod> discoveredEffectMethods)
 		{
 			// Register IDispatcher as an alias to Store
-			serviceCollection.AddScoped<IDispatcher>(serviceProvider => serviceProvider.GetService<Store>());
+			options.RegisterService(typeof(IDispatcher), serviceProvider => serviceProvider.GetService<Store>());
 			// Register IActionSubscriber as an alias to Store
-			serviceCollection.AddScoped<IActionSubscriber>(serviceProvider => serviceProvider.GetService<Store>());
+			options.RegisterService(typeof(IActionSubscriber), serviceProvider => serviceProvider.GetService<Store>());
 			// Register IStore as an alias to Store
-			serviceCollection.AddScoped<IStore>(serviceProvider => serviceProvider.GetService<Store>());
+			options.RegisterService(typeof(IStore), serviceProvider => serviceProvider.GetService<Store>());
 
 			// Register a custom factory for building IStore that will inject all effects
-			serviceCollection.AddScoped(typeof(Store), serviceProvider =>
+			options.RegisterService(typeof(Store), serviceProvider =>
 			{
 				var store = new Store();
 				foreach (DiscoveredFeatureClass discoveredFeatureClass in discoveredFeatureClasses)

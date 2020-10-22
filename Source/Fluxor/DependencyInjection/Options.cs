@@ -13,6 +13,18 @@ namespace Fluxor.DependencyInjection
 	{
 		internal AssemblyScanSettings[] AssembliesToScan { get; private set; } = new AssemblyScanSettings[0];
 		internal Type[] MiddlewareTypes = new Type[0];
+
+		private delegate void RegisterServiceByTypeHandler(Type serviceType);
+		private RegisterServiceByTypeHandler RegisterServiceByType;
+
+		private delegate void RegisterServiceWithImplementationTypeHandler(Type serviceType, Type implementationType);
+		private RegisterServiceWithImplementationTypeHandler RegisterServiceWithImplementationType;
+
+		private delegate void RegisterServiceUsingFactoryHandler(
+			Type serviceType,
+			Func<IServiceProvider, object> implementationFactory);
+		private RegisterServiceUsingFactoryHandler RegisterServiceUsingFactory;
+
 		/// <summary>
 		/// Service collection for registering services
 		/// </summary>
@@ -25,6 +37,7 @@ namespace Fluxor.DependencyInjection
 		public Options(IServiceCollection services)
 		{
 			Services = services;
+			UseScopedDependencyInjection();
 		}
 
 		/// <summary>
@@ -32,7 +45,9 @@ namespace Fluxor.DependencyInjection
 		/// </summary>
 		/// <param name="additionalAssembliesToScan">A collection of assemblies to scan</param>
 		/// <returns>Options</returns>
-		public Options ScanAssemblies(Assembly assemblyToScan, params Assembly[] additionalAssembliesToScan)
+		public Options ScanAssemblies(
+			Assembly assemblyToScan,
+			params Assembly[] additionalAssembliesToScan)
 		{
 			if (assemblyToScan == null)
 				throw new ArgumentNullException(nameof(assemblyToScan));
@@ -49,6 +64,37 @@ namespace Fluxor.DependencyInjection
 		}
 
 		/// <summary>
+		/// Registers a service for dependency injection
+		/// </summary>
+		/// <param name="serviceType">The dependency type that will be injected</param>
+		public void RegisterService(Type serviceType)
+		{
+			RegisterServiceByType(serviceType);
+		}
+
+		/// <summary>
+		/// Registers a service for dependency injection
+		/// </summary>
+		/// <param name="serviceType">The dependency type that will be injected</param>
+		/// <param name="implementationType">The class type to instantiate</param>
+		public void RegisterService(Type serviceType, Type implementationType)
+		{
+			RegisterServiceWithImplementationType(serviceType, implementationType);
+		}
+
+		/// <summary>
+		/// Registers a service for dependency injection
+		/// </summary>
+		/// <param name="serviceType">The dependency type that will be injected</param>
+		/// <param name="implementationFactory">A factory method to create the injected dependency</param>
+		public void RegisterService(
+					Type serviceType,
+					Func<IServiceProvider, object> implementationFactory)
+		{
+			RegisterServiceUsingFactory(serviceType, implementationFactory);
+		}
+
+		/// <summary>
 		/// Enables the developer to specify a class that implements <see cref="IMiddleware"/>
 		/// which should be injected into the <see cref="IStore.AddMiddleware(IMiddleware)"/> method
 		/// after dependency injection has completed.
@@ -61,7 +107,7 @@ namespace Fluxor.DependencyInjection
 			if (Array.IndexOf(MiddlewareTypes, typeof(TMiddleware)) > -1)
 				return this;
 
-			Services.AddScoped(typeof(TMiddleware));
+			RegisterService(typeof(TMiddleware));
 			Assembly assembly = typeof(TMiddleware).Assembly;
 			string @namespace = typeof(TMiddleware).Namespace;
 
@@ -78,5 +124,26 @@ namespace Fluxor.DependencyInjection
 			.ToArray();
 			return this;
 		}
+
+		/// <summary>
+		/// Registers discovered services using a Scoped container
+		/// </summary>
+		public void UseScopedDependencyInjection()
+		{
+			RegisterServiceByType = (serviceType) => Services.AddScoped(serviceType);
+			RegisterServiceWithImplementationType = (serviceType, implementingType) => Services.AddScoped(serviceType, implementingType);
+			RegisterServiceUsingFactory = (serviceType, factory) => Services.AddScoped(serviceType, factory);
+		}
+
+		/// <summary>
+		/// Registers discovered services using a Singleton container
+		/// </summary>
+		public void UseSingletonDependencyInjection()
+		{
+			RegisterServiceByType = (serviceType) => Services.AddSingleton(serviceType);
+			RegisterServiceWithImplementationType = (serviceType, implementingType) => Services.AddSingleton(serviceType, implementingType);
+			RegisterServiceUsingFactory = (serviceType, factory) => Services.AddSingleton(serviceType, factory);
+		}
+
 	}
 }
